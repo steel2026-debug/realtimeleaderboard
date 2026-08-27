@@ -1,273 +1,154 @@
 # Real-Time Leaderboard
 
-![image](https://github.com/user-attachments/assets/ec454cf1-f4fc-477b-97a5-1d9f92061e29)
+A full-stack leaderboard platform built with NestJS, PostgreSQL, Redis, Socket.IO, and React. Players can authenticate, submit scores, view rankings, manage friends and messages, and join tournaments. Admins can manage the game catalog.
 
-## Description
+Project brief: https://roadmap.sh/projects/realtime-leaderboard-system
 
-The Real-Time Leaderboard project is a backend service designed to manage and display real-time leaderboards for various games. It provides a comprehensive set of features for user authentication, game management, and score tracking. Users can sign up, log in, and submit their scores, which are then used to generate dynamic leaderboards. The service includes robust authentication and authorization mechanisms, ensuring secure access to protected routes. It leverages technologies like TypeScript, NestJS, TypeORM, PostgreSQL, and Redis to deliver high performance and scalability. Additionally.
+## Highlights
 
-## Project URL
+- JWT access and refresh tokens with bcrypt password hashing.
+- Admin-only game management and protected user, score, social, and tournament workflows.
+- Redis sorted sets for fast leaderboard reads and rank calculations.
+- Socket.IO events for leaderboard updates and real-time messaging.
+- PostgreSQL persistence with TypeORM migrations for 11 relational tables.
+- Request validation, standardized responses, error handling, and a 10-request-per-60-second rate limit.
+- React control room for exercising the API from a browser.
+- Repeatable demo-data seeding for local development.
 
-https://roadmap.sh/projects/realtime-leaderboard-system
+## Stack
 
-## Features
+TypeScript, Node.js, NestJS, TypeORM, PostgreSQL, Redis, Socket.IO, Passport, JWT, React, Vite, and Lucide.
 
-- User authentication and authorization
+## Requirements
 
-  - JWT-based authentication with access and refresh tokens
-  - Protected routes with role-based authorization (admin/user)
-  - Secure password hashing with bcrypt
-  - Automatic token refresh mechanism
-  - Session management with Redis
+- Node.js 20 or newer.
+- PostgreSQL 16 or newer.
+- Redis 6 or newer.
 
-- User Management
+## Backend Setup
 
-  - CRUD operations (create, read, update, delete)
-  - Profile management
-  - Friend system with request/accept/reject functionality
-  - Real-time messaging between users
-  - Unread message tracking
-  - Message read status updates
-
-- Game Management
-
-  - CRUD operations for games
-  - Game rating system
-  - Game description and metadata
-  - Admin-only game management operations
-
-- Score System
-
-  - Score submission and validation
-  - Historical score tracking
-  - Score timestamps
-  - Score filtering by date range
-  - Top players reporting
-
-- Real-time Features
-
-  - WebSocket integration for live updates
-  - Real-time message delivery
-  - Real-time leaderboard updates
-
-- Leaderboard System
-
-  - Global leaderboards across all games
-  - Game-specific leaderboards
-  - User ranking calculation
-  - Top players reporting by game
-  - Date-range based leaderboard filtering
-  - Redis-powered fast leaderboard queries
-
-- Data Management
-
-  - PostgreSQL database for persistent storage
-  - Redis caching for performance
-  - TypeORM for database operations
-  - Entity relationship management
-  - Data validation and sanitization
-
-- API Security
-
-  - Rate limiting protection
-  - Request validation
-  - Error handling and logging
-  - Custom exception handling
-  - Standardized API responses
-
-- Social Features
-  - Friend management system
-  - Private messaging
-  - Message read receipts
-  - Friend request system
-  - Social interactions tracking
-
-## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/AhmedHossam777/real-time-leaderboard
-   ```
-2. Navigate to the project directory:
-   ```bash
-   cd real-time-leaderboard
-   ```
-3. Setting Up a `.env` File
-
-To configure the environment variables for the project, set up a `.env` file with the following parameters:
-
-```env
-DB_HOST=your_database_host
-DB_PORT=your_database_port
-DB_USERNAME=your_database_username
-DB_PASSWORD=your_database_password
-DB_DATABASE=your_database_name
-
-JWT_SECRET=your_jwt_secret
-ACCESSTOKEN_LIFETIME=access_token_lifetime_in_seconds
-REFRESHTOKEN_LIFETIME=refresh_token_lifetime_in_seconds
-REFRESH_TOKEN_SECRET=your_refresh_token_secret
-
-REDIS_PASSWORD=your_redis_password
-REDIS_HOST=your_redis_host
-REDIS_PORT=your_redis_port
+```bash
+git clone https://github.com/Vishukaneki/RealTimeLeaderBoard.git
+cd RealTimeLeaderBoard
+npm install
 ```
 
-Make sure to replace the placeholders with your actual credentials and values for the environment variables.
+Create `.env` in the project root:
 
-3. Install the dependencies:
-   ```bash
-   npm install
-   ```
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=your_postgres_user
+DB_PASSWORD=your_postgres_password
+DB_DATABASE=leaderboard
 
-## Usage
+JWT_SECRET=replace_with_a_long_random_secret
+ACCESSTOKEN_LIFETIME=3600
+REFRESHTOKEN_LIFETIME=604800
+REFRESH_TOKEN_SECRET=replace_with_another_long_random_secret
 
-1. Start the development server:
-   ```bash
-   npm run start:dev
-   ```
-2. The application will be running at `http://localhost:3000`.
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+```
 
-## Technology
+Start PostgreSQL and Redis. With Homebrew on macOS:
 
-- **TypeScript**
-- **Node.js**
-- **NestJS**
-- **TypeORM**
-- **PostgreSQL**
-- **Redis**
-- **Passport**
-- **JWT**
+```bash
+brew services start postgresql@16
+brew services start redis
+```
 
-## API Endpoints
+Create the configured database if it does not exist:
 
-### Auth
+```bash
+createdb leaderboard
+```
 
-- **POST /auth/signup**
+If `createdb` is not on your `PATH`, use the Homebrew binary directly:
 
-  - Description: Sign up a new user.
-  - Body: `CreateUserDto`
+```bash
+/usr/local/opt/postgresql@16/bin/createdb leaderboard
+```
 
-- **POST /auth/login**
+Run migrations and load reproducible demo data:
 
-  - Description: Log in a user.
-  - Body: `LoginDto`
+```bash
+npm run migration:run
+npm run seed
+```
 
-- **GET /auth/protected**
+The seed creates users, games, scores, leaderboard entries, friend requests, messages, and a tournament. New demo users use the password `DemoPass123!`; existing users are preserved.
 
-  - Description: Access a protected route.
-  - Headers: `Authorization: Bearer <token>`
+Start the API:
 
-- **POST /auth/refreshToken**
+```bash
+npm run start:dev
+```
 
-  - Description: Refresh the authentication token.
-  - Body: `{ "refreshToken": "string" }`
+The API listens on http://localhost:3000.
 
-- **POST /auth/logout**
-  - Description: Log out the current user.
-  - Headers: `Authorization: Bearer <token>`
+## React Control Room
 
-### User
+In a second terminal:
 
-- **GET /user**
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-  - Description: Find a user by email.
-  - Query: `email`
-  - Headers: `Authorization: Bearer <token>`
+Open the URL printed by Vite, usually http://localhost:5173. The dashboard provides controls for authentication, games, scores, leaderboards, friends, messages, and tournaments, plus a Socket.IO connection indicator.
 
-- **PATCH /user/:id**
+The frontend uses `VITE_API_URL` when provided; otherwise it defaults to `http://localhost:3000`.
 
-  - Description: Update a user by ID.
-  - Params: `id`
-  - Body: `UpdateUserDto`
-  - Headers: `Authorization: Bearer <token>`
+## API Overview
 
-- **DELETE /user/:id**
+Protected routes require `Authorization: Bearer <accessToken>`.
 
-  - Description: Delete a user by ID.
-  - Params: `id`
-  - Headers: `Authorization: Bearer <token>`
+| Area | Routes |
+| --- | --- |
+| Auth | `POST /auth/signup`, `POST /auth/login`, `GET /auth/protected`, `POST /auth/refreshToken`, `POST /auth/logout` |
+| Users | `POST /user`, `GET /user`, `GET /user/me`, `PATCH /user/:id`, `DELETE /user/:id` |
+| Rankings | `GET /user/ranking?gameName=...`, `GET /user/ranking/:gameName`, `GET /leaderboard`, `GET /leaderboard/game?gameName=...` |
+| Games | `POST /game`, `GET /game`, `GET /game/:id`, `PATCH /game/:id`, `DELETE /game/:id` |
+| Scores | `POST /score?gameName=...`, `GET /score?gameName=...`, `GET /score/top-players` |
+| Social | `POST /user/friends/request`, `POST /user/friends/request/:id/:status`, `GET /user/friends`, `GET /user/friends/requests/pending` |
+| Messages | `POST /user/messages`, `GET /user/messages/:friendId`, `GET /user/messages/unread/count` |
+| Tournaments | `POST /tournament`, `GET /tournament`, `GET /tournament/:id`, `PATCH /tournament/:id`, `DELETE /tournament/:id`, `POST /tournament/:id/join` |
 
-- **GET /user/me**
+Successful responses use `{ success, data, message }`. Leaderboard updates are emitted through Socket.IO events named `leaderboard_update_<gameName>`.
 
-  - Description: Get the current logged-in user.
-  - Headers: `Authorization: Bearer <token>`
+## Verification and Benchmarks
 
-- **GET /user/ranking**
+Build both applications:
 
-  - Description: Get the ranking of the current user for a specific game.
-  - Query: `gameName`
-  - Headers: `Authorization: Bearer <token>`
+```bash
+npm run build
+cd frontend && npm run build
+```
 
-- **GET /user/ranking/:gameName**
-  - Description: Get the top players for a specific game.
-  - Params: `gameName`
-  - Headers: `Authorization: Bearer <token>`
+Local benchmark commands:
 
-### Score
+```bash
+npx autocannon -c 2 -a 10 http://localhost:3000/
+redis-benchmark -n 1000 -c 10 -q
+```
 
-- **POST /score**
+One local development run produced 10/10 successful API smoke-test requests with 3 ms median latency, 6.4 ms average latency, and 19 ms p97.5 latency. Redis reported approximately 55K `ZADD` operations/sec. These are machine-specific local measurements, not production capacity guarantees.
 
-  - Description: Submit a score for a game.
-  - Body: `CreateScoreDto`
-  - Query: `gameName`
-  - Headers: `Authorization: Bearer <token>`
+## Useful Commands
 
-- **GET /score**
+| Command | Purpose |
+| --- | --- |
+| `npm run start:dev` | Start the backend in watch mode |
+| `npm run build` | Build the backend |
+| `npm run migration:run` | Apply pending TypeORM migrations |
+| `npm run migration:revert` | Revert the latest migration |
+| `npm run seed` | Insert repeatable demo data |
+| `npm test` | Run unit tests |
+| `npm run test:e2e` | Run end-to-end tests |
 
-  - Description: Get the highest scores for a game.
-  - Query: `gameName`
-  - Headers: `Authorization: Bearer <token>`
+## License
 
-- **GET /score/top-players**
-  - Description: Get a report of the top players for a game within a date range.
-  - Query: `gameId`, `startDate`, `endDate`, `limit`
-  - Headers: `Authorization: Bearer <token>`
-
-### Game
-
-- **POST /game**
-
-  - Description: Create a new game.
-  - Body: `CreateGameDto`
-
-- **GET /game/:id**
-
-  - Description: Find a game by ID.
-  - Params: `id`
-
-- **GET /game**
-
-  - Description: Find a game by name.
-  - Query: `name`
-
-- **PATCH /game/:id**
-
-  - Description: Update a game by ID.
-  - Params: `id`
-  - Body: `UpdateGameDto`
-
-- **DELETE /game/:id**
-  - Description: Delete a game by ID.
-  - Params: `id`
-
-### Leaderboard
-
-- **GET /leaderboard**
-
-  - Description: Get the highest scores.
-  - Headers: `Authorization: Bearer <token>`
-
-- **GET /leaderboard/game**
-  - Description: Get the leaderboard for a specific game.
-  - Query: `gameName`
-  - Headers: `Authorization: Bearer <token>`
-
-## Contributing
-
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-branch`).
-3. Make your changes.
-4. Commit your changes (`git commit -m 'Add some feature'`).
-5. Push to the branch (`git push origin feature-branch`).
-6. Open a pull request.
+This project is private and currently has no published open-source license.
