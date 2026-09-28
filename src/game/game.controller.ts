@@ -33,10 +33,12 @@ export class GameController {
   }
 
   @Get('')
-  async findOneByName(@Query('name') name: string) {
+  async find(@Query('name') name?: string) {
     try {
-      const game = await this.gameService.findOneByName(name);
-      return ResponseUtil.success(game, 'Game found successfully');
+      const games = name
+        ? await this.gameService.findOneByName(name)
+        : await this.gameService.findAll();
+      return ResponseUtil.success(games, name ? 'Game found successfully' : 'Games retrieved successfully');
     } catch (error) {
       throw new NotFoundException(error.message);
     }

@@ -21,12 +21,12 @@ export class AuthService {
 	async generateTokens(userId: number) {
 		const payload = { userId };
 		const accessToken = this.jwtService.sign(payload, {
-			expiresIn: process.env.ACCESSTOKEN_LIFETIME,
+			expiresIn: Number(process.env.ACCESSTOKEN_LIFETIME),
 			secret: process.env.JWT_SECRET,
 		});
 
 		const refreshToken = this.jwtService.sign(payload, {
-			expiresIn: process.env.REFRESHTOKEN_LIFETIME,
+			expiresIn: Number(process.env.REFRESHTOKEN_LIFETIME),
 			secret: process.env.REFRESH_TOKEN_SECRET,
 		});
 

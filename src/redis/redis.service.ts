@@ -5,7 +5,11 @@ import Redis from 'ioredis';
 export class RedisService {
 	private readonly client: Redis;
 	constructor() {
-		this.client = new Redis();
+		this.client = new Redis({
+			host: process.env.REDIS_HOST || 'localhost',
+			port: Number(process.env.REDIS_PORT) || 6379,
+			password: process.env.REDIS_PASSWORD || undefined,
+		});
 	}
 
 	async setRefreshToken(userId: number, refreshToken: string) {

@@ -6,7 +6,7 @@ import { Score } from './entities/score.entity';
 import { RedisService } from '../redis/redis.service';
 import { GameService } from '../game/game.service';
 import { GameModule } from '../game/game.module';
-import { LeaderboardGateway } from 'src/websocket/leaderboard.gateway';
+import { LeaderboardGateway } from '../websocket/leaderboard.gateway';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([Score]), GameModule],

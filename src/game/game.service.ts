@@ -19,6 +19,10 @@ export class GameService {
 		return await this.gameRepo.findOneBy({ id });
 	}
 
+	async findAll() {
+		return await this.gameRepo.find({ order: { id: 'ASC' } });
+	}
+
 	async findOneByName(name: string) {
 		return await this.gameRepo.findOneBy({ name });
 	}

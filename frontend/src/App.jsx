@@ -97,29 +97,152 @@ function Overview({ loggedIn, refresh }) {
 }
 
 function Games() {
-  const [form, setForm] = useState({ name: '', description: '', id: '' }); const [state, run] = useApiAction(); const set = (k) => (v) => setForm({ ...form, [k]: v });
-  return <div className="content-grid"><Panel eyebrow="Game registry" title="Create a game"><div className="form-grid"><Field label="Name" value={form.name} onChange={set('name')} placeholder="Neon Sprint" /><Field label="Description" value={form.description} onChange={set('description')} placeholder="Velocity under pressure" /></div><div className="actions"><ActionButton onClick={() => run(() => request('/game', { method: 'POST', body: JSON.stringify({ name: form.name, description: form.description }) }))}> <Plus size={16} /> Create game</ActionButton><ActionButton tone="ghost" onClick={() => run(() => request('/game'))}>List games</ActionButton></div><Result state={state} /></Panel><Panel eyebrow="Game lookup" title="Inspect or delete"><Field label="Game ID or name" value={form.id} onChange={set('id')} placeholder="1 or Neon Sprint" /><div className="actions"><ActionButton tone="ghost" onClick={() => run(() => request(`/game/${form.id}`))}>Get by ID</ActionButton><ActionButton tone="ghost" onClick={() => run(() => request(`/game?name=${encodeURIComponent(form.id)}`))}>Find by name</ActionButton><ActionButton tone="danger" onClick={() => run(() => request(`/game/${form.id}`, { method: 'DELETE' }))}>Delete</ActionButton></div><Result state={state} /></Panel></div>;
+  const [form, setForm] = useState({ name: '', description: '', id: '' });
+  const [createState, runCreate] = useApiAction();
+  const [lookupState, runLookup] = useApiAction();
+  const set = (k) => (v) => setForm({ ...form, [k]: v });
+  
+  const deleteGame = () => {
+    const isNumeric = !isNaN(form.id) && form.id.trim() !== '';
+    const deleteRequest = isNumeric 
+      ? request(`/game/${form.id}`, { method: 'DELETE' })
+      : request(`/game?name=${encodeURIComponent(form.id)}`).then(game => 
+          request(`/game/${game.id}`, { method: 'DELETE' })
+        );
+    return runLookup(() => deleteRequest);
+  };
+  
+  return <div className="content-grid">
+    <Panel eyebrow="Game registry" title="Create a game">
+      <div className="form-grid">
+        <Field label="Name" value={form.name} onChange={set('name')} placeholder="Neon Sprint" />
+        <Field label="Description" value={form.description} onChange={set('description')} placeholder="Velocity under pressure" />
+      </div>
+      <div className="actions">
+        <ActionButton loading={createState.loading} onClick={() => runCreate(() => request('/game', { method: 'POST', body: JSON.stringify({ name: form.name, description: form.description }) }))}><Plus size={16} /> Create game</ActionButton>
+        <ActionButton tone="ghost" loading={createState.loading} onClick={() => runCreate(() => request('/game'))}>List games</ActionButton>
+      </div>
+      <Result state={createState} />
+    </Panel>
+    <Panel eyebrow="Game lookup" title="Inspect or delete">
+      <Field label="Game ID or name" value={form.id} onChange={set('id')} placeholder="1 or Neon Sprint" />
+      <div className="actions">
+        <ActionButton tone="ghost" loading={lookupState.loading} onClick={() => runLookup(() => request(`/game/${form.id}`))}>Get by ID</ActionButton>
+        <ActionButton tone="ghost" loading={lookupState.loading} onClick={() => runLookup(() => request(`/game?name=${encodeURIComponent(form.id)}`))}>Find by name</ActionButton>
+        <ActionButton tone="danger" loading={lookupState.loading} onClick={deleteGame}>Delete</ActionButton>
+      </div>
+      <Result state={lookupState} />
+    </Panel>
+  </div>;
 }
 
 function Scores() {
-  const [form, setForm] = useState({ gameName: '', score: '', gameId: '', startDate: '', endDate: '', limit: '10' }); const [state, run] = useApiAction(); const set = (k) => (v) => setForm({ ...form, [k]: v });
-  return <><div className="content-grid"><Panel eyebrow="Score engine" title="Submit a score"><div className="form-grid"><Field label="Game name" value={form.gameName} onChange={set('gameName')} placeholder="Neon Sprint" /><Field label="Points" value={form.score} onChange={set('score')} type="number" placeholder="4200" /></div><div className="actions"><ActionButton onClick={() => run(() => request(`/score?gameName=${encodeURIComponent(form.gameName)}`, { method: 'POST', body: JSON.stringify({ score: Number(form.score) }) }))}><Send size={16} /> Submit score</ActionButton><ActionButton tone="ghost" onClick={() => run(() => request(`/score?gameName=${encodeURIComponent(form.gameName)}`))}>Get high scores</ActionButton></div><Result state={state} /></Panel><Panel eyebrow="Reporting" title="Top players report"><div className="form-grid three"><Field label="Game ID" value={form.gameId} onChange={set('gameId')} placeholder="1" /><Field label="From" value={form.startDate} onChange={set('startDate')} type="date" /><Field label="To" value={form.endDate} onChange={set('endDate')} type="date" /></div><div className="actions"><ActionButton onClick={() => run(() => request(`/score/top-players?gameId=${form.gameId}&startDate=${form.startDate}&endDate=${form.endDate}&limit=${form.limit}`))}><BarChart3 size={16} /> Generate report</ActionButton></div><Result state={state} /></Panel></div></>;
+  const [form, setForm] = useState({ gameName: '', score: '', gameId: '', startDate: '', endDate: '', limit: '10' });
+  const [scoreState, runScore] = useApiAction();
+  const [reportState, runReport] = useApiAction();
+  const set = (key) => (value) => setForm({ ...form, [key]: value });
+
+  return <div className="content-grid">
+    <Panel eyebrow="Score engine" title="Submit a score">
+      <div className="form-grid">
+        <Field label="Game name" value={form.gameName} onChange={set('gameName')} placeholder="Neon Sprint" />
+        <Field label="Points" value={form.score} onChange={set('score')} type="number" placeholder="4200" />
+      </div>
+      <div className="actions">
+        <ActionButton loading={scoreState.loading} onClick={() => runScore(() => request(`/score?gameName=${encodeURIComponent(form.gameName)}`, { method: 'POST', body: JSON.stringify({ score: Number(form.score) }) }))}><Send size={16} /> Submit score</ActionButton>
+        <ActionButton tone="ghost" loading={scoreState.loading} onClick={() => runScore(() => request(`/score?gameName=${encodeURIComponent(form.gameName)}`))}>Get high scores</ActionButton>
+      </div>
+      <Result state={scoreState} />
+    </Panel>
+    <Panel eyebrow="Reporting" title="Top players report">
+      <div className="form-grid">
+        <Field label="Game ID" value={form.gameId} onChange={set('gameId')} type="number" placeholder="1" />
+        <Field label="From (optional)" value={form.startDate} onChange={set('startDate')} type="date" />
+        <Field label="To (optional)" value={form.endDate} onChange={set('endDate')} type="date" />
+        <Field label="Maximum players" value={form.limit} onChange={set('limit')} type="number" placeholder="10" />
+      </div>
+      <div className="actions">
+        <ActionButton loading={reportState.loading} onClick={() => runReport(() => request(`/score/top-players?gameId=${form.gameId}&startDate=${form.startDate}&endDate=${form.endDate}&limit=${form.limit}`))}><BarChart3 size={16} /> Generate report</ActionButton>
+      </div>
+      <Result state={reportState} />
+    </Panel>
+  </div>;
 }
 
 function Social() {
-  const [form, setForm] = useState({ userId: '', friendId: '', content: '' }); const [state, run] = useApiAction(); const set = (k) => (v) => setForm({ ...form, [k]: v });
-  return <div className="content-grid"><Panel eyebrow="Player network" title="Friends"><div className="form-grid"><Field label="Receiver ID" value={form.friendId} onChange={set('friendId')} placeholder="2" /></div><div className="actions"><ActionButton onClick={() => run(() => request('/user/friends/request', { method: 'POST', body: JSON.stringify({ receiverId: Number(form.friendId) }) }))}><UserPlus size={16} /> Send request</ActionButton><ActionButton tone="ghost" onClick={() => run(() => request('/user/friends'))}>List friends</ActionButton><ActionButton tone="ghost" onClick={() => run(() => request('/user/friends/requests/pending'))}>Pending requests</ActionButton></div><Result state={state} /></Panel><Panel eyebrow="Direct line" title="Messages"><div className="form-grid"><Field label="Friend ID" value={form.userId} onChange={set('userId')} placeholder="2" /><Field label="Message" value={form.content} onChange={set('content')} placeholder="Nice run." /></div><div className="actions"><ActionButton onClick={() => run(() => request('/user/messages', { method: 'POST', body: JSON.stringify({ receiverId: Number(form.userId), content: form.content }) }))}><MessageCircle size={16} /> Send message</ActionButton><ActionButton tone="ghost" onClick={() => run(() => request(`/user/messages/${form.userId}`))}>Load thread</ActionButton><ActionButton tone="ghost" onClick={() => run(() => request('/user/messages/unread/count'))}><Bell size={16} /> Unread count</ActionButton></div><Result state={state} /></Panel></div>;
+  const [form, setForm] = useState({ userId: '', friendId: '', requestId: '', content: '' });
+  const [friendsState, runFriends] = useApiAction();
+  const [messagesState, runMessages] = useApiAction();
+  const set = (k) => (v) => setForm({ ...form, [k]: v });
+  
+  return <div className="content-grid">
+    <Panel eyebrow="Player network" title="Friends">
+      <div className="form-grid">
+        <Field label="Receiver ID" value={form.friendId} onChange={set('friendId')} placeholder="2" />
+        <Field label="Pending request ID" value={form.requestId} onChange={set('requestId')} type="number" placeholder="1" />
+      </div>
+      <div className="actions">
+        <ActionButton loading={friendsState.loading} onClick={() => runFriends(() => request('/user/friends/request', { method: 'POST', body: JSON.stringify({ receiverId: Number(form.friendId) }) }))}><UserPlus size={16} /> Send request</ActionButton>
+        <ActionButton tone="ghost" loading={friendsState.loading} onClick={() => runFriends(() => request('/user/friends'))}>List friends</ActionButton>
+        <ActionButton tone="ghost" loading={friendsState.loading} onClick={() => runFriends(() => request('/user/friends/requests/pending'))}>Pending requests</ActionButton>
+        <ActionButton tone="ghost" loading={friendsState.loading} onClick={() => runFriends(() => request(`/user/friends/request/${form.requestId}/accepted`, { method: 'POST' }))}><Check size={16} /> Accept request</ActionButton>
+        <ActionButton tone="danger" loading={friendsState.loading} onClick={() => runFriends(() => request(`/user/friends/request/${form.requestId}/rejected`, { method: 'POST' }))}><X size={16} /> Reject request</ActionButton>
+      </div>
+      <Result state={friendsState} />
+    </Panel>
+    <Panel eyebrow="Direct line" title="Messages">
+      <div className="form-grid">
+        <Field label="Friend ID" value={form.userId} onChange={set('userId')} placeholder="2" />
+        <Field label="Message" value={form.content} onChange={set('content')} placeholder="Nice run." />
+      </div>
+      <div className="actions">
+        <ActionButton loading={messagesState.loading} onClick={() => runMessages(() => request('/user/messages', { method: 'POST', body: JSON.stringify({ receiverId: Number(form.userId), content: form.content }) }))}><MessageCircle size={16} /> Send message</ActionButton>
+        <ActionButton tone="ghost" loading={messagesState.loading} onClick={() => runMessages(() => request(`/user/messages/${form.userId}`))}>Load thread</ActionButton>
+        <ActionButton tone="ghost" loading={messagesState.loading} onClick={() => runMessages(() => request('/user/messages/unread/count'))}><Bell size={16} /> Unread count</ActionButton>
+      </div>
+      <Result state={messagesState} />
+    </Panel>
+  </div>;
 }
 
 function Tournaments() {
-  const [form, setForm] = useState({ name: '', startDate: '', endDate: '', maxParticipants: '20', gameIds: '', id: '', userId: '' }); const [state, run] = useApiAction(); const set = (k) => (v) => setForm({ ...form, [k]: v });
-  return <div className="content-grid"><Panel eyebrow="Competitive events" title="Create tournament"><div className="form-grid"><Field label="Name" value={form.name} onChange={set('name')} placeholder="Friday Night Finals" /><Field label="Max players" value={form.maxParticipants} onChange={set('maxParticipants')} type="number" placeholder="20" /><Field label="Start" value={form.startDate} onChange={set('startDate')} type="datetime-local" /><Field label="End" value={form.endDate} onChange={set('endDate')} type="datetime-local" /><Field label="Game IDs" value={form.gameIds} onChange={set('gameIds')} placeholder="1, 2" /></div><div className="actions"><ActionButton onClick={() => run(() => request('/tournament', { method: 'POST', body: JSON.stringify({ name: form.name, startDate: form.startDate, endDate: form.endDate, maxParticipants: Number(form.maxParticipants), gameIds: form.gameIds.split(',').map(Number).filter(Boolean) }) }))}><Plus size={16} /> Create tournament</ActionButton><ActionButton tone="ghost" onClick={() => run(() => request('/tournament'))}>List tournaments</ActionButton></div><Result state={state} /></Panel><Panel eyebrow="Event controls" title="Join a tournament"><div className="form-grid"><Field label="Tournament ID" value={form.id} onChange={set('id')} placeholder="1" /><Field label="User ID" value={form.userId} onChange={set('userId')} placeholder="2" /></div><div className="actions"><ActionButton onClick={() => run(() => request(`/tournament/${form.id}/join`, { method: 'POST', body: JSON.stringify({ userId: Number(form.userId) }) }))}><Swords size={16} /> Join event</ActionButton><ActionButton tone="ghost" onClick={() => run(() => request(`/tournament/${form.id}`))}>Inspect event</ActionButton></div><Result state={state} /></Panel></div>;
+  const [form, setForm] = useState({ name: '', startDate: '', endDate: '', maxParticipants: '20', gameIds: '', id: '' });
+  const [createState, runCreate] = useApiAction();
+  const [joinState, runJoin] = useApiAction();
+  const set = (k) => (v) => setForm({ ...form, [k]: v });
+  
+  return <div className="content-grid">
+    <Panel eyebrow="Competitive events" title="Create tournament">
+      <div className="form-grid">
+        <Field label="Name" value={form.name} onChange={set('name')} placeholder="Friday Night Finals" />
+        <Field label="Max players" value={form.maxParticipants} onChange={set('maxParticipants')} type="number" placeholder="20" />
+        <Field label="Start" value={form.startDate} onChange={set('startDate')} type="datetime-local" />
+        <Field label="End" value={form.endDate} onChange={set('endDate')} type="datetime-local" />
+        <Field label="Game IDs" value={form.gameIds} onChange={set('gameIds')} placeholder="1, 2" />
+      </div>
+      <div className="actions">
+        <ActionButton loading={createState.loading} onClick={() => runCreate(() => request('/tournament', { method: 'POST', body: JSON.stringify({ name: form.name, startDate: form.startDate, endDate: form.endDate, maxParticipants: Number(form.maxParticipants), gameIds: form.gameIds.split(',').map(Number).filter(Boolean) }) }))}><Plus size={16} /> Create tournament</ActionButton>
+        <ActionButton tone="ghost" loading={createState.loading} onClick={() => runCreate(() => request('/tournament'))}>List tournaments</ActionButton>
+      </div>
+      <Result state={createState} />
+    </Panel>
+    <Panel eyebrow="Event controls" title="Join a tournament">
+      <div className="form-grid">
+        <Field label="Tournament ID" value={form.id} onChange={set('id')} type="number" placeholder="1" />
+      </div>
+      <div className="actions">
+        <ActionButton loading={joinState.loading} onClick={() => runJoin(() => request(`/tournament/${form.id}/join`, { method: 'POST' }))}><Swords size={16} /> Join event</ActionButton>
+        <ActionButton tone="ghost" loading={joinState.loading} onClick={() => runJoin(() => request(`/tournament/${form.id}`))}>Inspect event</ActionButton>
+      </div>
+      <Result state={joinState} />
+    </Panel>
+  </div>;
 }
 
 export default function App() {
   const [view, setView] = useState('overview'); const [token, setToken] = useState(localStorage.getItem('pulse_token')); const [mobileOpen, setMobileOpen] = useState(false); const [tick, setTick] = useState(0);
   const loggedIn = Boolean(token); const current = nav.find((item) => item.id === view);
-  const logout = () => { localStorage.removeItem('pulse_token'); setToken(null); };
+  const logout = async () => { try { await request('/auth/logout', { method: 'POST' }); } catch {} localStorage.removeItem('pulse_token'); setToken(null); };
   useEffect(() => {
     const handleUnauthorized = () => { setToken(null); };
     window.addEventListener('pulse:unauthorized', handleUnauthorized);

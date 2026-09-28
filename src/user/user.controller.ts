@@ -13,8 +13,6 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JWTAuthGuard } from '../auth/guards/auth.guard';
-import { Serialize } from '../common/interceptors/serialize.interceptor';
-import { UserDto } from './dto/user.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from './entities/user.entity';
 import {
@@ -25,17 +23,23 @@ import { ResponseUtil } from '../common/utils/response.util';
 import { FriendRequestDto } from './dto/friend-request.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 
-@Serialize(UserDto)
 @UseGuards(JWTAuthGuard)
 @Controller('user')
 export class UserController {
 	constructor(private readonly userService: UserService) {}
 
+	private userResponse(user: User) {
+		return { id: user.id, username: user.username, email: user.email };
+	}
+
 	@Post()
 	async create(@Body() createUserDto: CreateUserDto) {
 		try {
 			const user = await this.userService.create(createUserDto);
-			return ResponseUtil.success(user, 'User created successfully');
+			return ResponseUtil.success(
+				this.userResponse(user),
+				'User created successfully',
+			);
 		} catch (error) {
 			throw new BadRequestException(error.message);
 		}
@@ -45,7 +49,7 @@ export class UserController {
 	async find(@Query('email') email: string) {
 		try {
 			const user = await this.userService.find(email);
-			return ResponseUtil.success(user, 'User found successfully');
+			return ResponseUtil.success(this.userResponse(user), 'User found successfully');
 		} catch (error) {
 			throw new NotFoundException(error.message);
 		}
@@ -55,7 +59,7 @@ export class UserController {
 	async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
 		try {
 			const user = await this.userService.update(+id, updateUserDto);
-			return ResponseUtil.success(user, 'User updated successfully');
+			return ResponseUtil.success(this.userResponse(user), 'User updated successfully');
 		} catch (error) {
 			throw new BadRequestException(error.message);
 		}
@@ -73,7 +77,10 @@ export class UserController {
 
 	@Get('me')
 	getCurrentUser(@CurrentUser() user: User) {
-		return ResponseUtil.success(user, 'Current user retrieved successfully');
+		return ResponseUtil.success(
+			this.userResponse(user),
+			'Current user retrieved successfully',
+		);
 	}
 
 	@Get('/ranking')
@@ -118,7 +125,16 @@ export class UserController {
 				user.id,
 				receiverId,
 			);
-			return ResponseUtil.success(request, 'Friend request sent successfully');
+			return ResponseUtil.success(
+				{
+					id: request.id,
+					status: request.status,
+					createdAt: request.createdAt,
+					senderId: user.id,
+					receiverId,
+				},
+				'Friend request sent successfully',
+			);
 		} catch (error) {
 			throw new BadRequestException(error.message);
 		}
@@ -147,7 +163,10 @@ export class UserController {
 	async getFriends(@CurrentUser() user: User) {
 		try {
 			const friends = await this.userService.getFriends(user.id);
-			return ResponseUtil.success(friends, 'Friends retrieved successfully');
+			return ResponseUtil.success(
+				friends.map((friend) => this.userResponse(friend)),
+				'Friends retrieved successfully',
+			);
 		} catch (error) {
 			throw new BadRequestException(error.message);
 		}
@@ -158,7 +177,12 @@ export class UserController {
 		try {
 			const requests = await this.userService.getPendingFriendRequests(user.id);
 			return ResponseUtil.success(
-				requests,
+				requests.map((request) => ({
+					id: request.id,
+					status: request.status,
+					createdAt: request.createdAt,
+					sender: this.userResponse(request.sender),
+				})),
 				'Pending requests retrieved successfully',
 			);
 		} catch (error) {
@@ -177,7 +201,17 @@ export class UserController {
 				receiverId,
 				content,
 			);
-			return ResponseUtil.success(message, 'Message sent successfully');
+			return ResponseUtil.success(
+				{
+					id: message.id,
+					content: message.content,
+					sentAt: message.sentAt,
+					read: message.read,
+					senderId: user.id,
+					receiverId,
+				},
+				'Message sent successfully',
+			);
 		} catch (error) {
 			throw new BadRequestException(error.message);
 		}
@@ -204,7 +238,17 @@ export class UserController {
 		try {
 			const messages = await this.userService.getMessages(user.id, friendId);
 			await this.userService.markMessagesAsRead(user.id, friendId);
-			return ResponseUtil.success(messages, 'Messages retrieved successfully');
+			return ResponseUtil.success(
+				messages.map((message) => ({
+					id: message.id,
+					content: message.content,
+					sentAt: message.sentAt,
+					read: message.read,
+					sender: this.userResponse(message.sender),
+					receiver: this.userResponse(message.receiver),
+				})),
+				'Messages retrieved successfully',
+			);
 		} catch (error) {
 			throw new BadRequestException(error.message);
 		}

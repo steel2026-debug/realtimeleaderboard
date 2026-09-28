@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisService } from '../redis/redis.service';
 import { FriendRequest } from './entities/friend-request.entity';
 import { Message } from './entities/message.entity';
-import { MessageGateway } from 'src/websocket/message.gateway';
+import { MessageGateway } from '../websocket/message.gateway';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([User, FriendRequest, Message])],

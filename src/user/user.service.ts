@@ -7,8 +7,8 @@ import { User } from './entities/user.entity';
 import { RedisService } from '../redis/redis.service';
 import { FriendRequest } from './entities/friend-request.entity';
 import { Message } from './entities/message.entity';
-import { BadRequestException } from 'src/common/exceptions/application.exceptions';
-import { MessageGateway } from 'src/websocket/message.gateway';
+import { BadRequestException } from '../common/exceptions/application.exceptions';
+import { MessageGateway } from '../websocket/message.gateway';
 
 @Injectable()
 export class UserService {
@@ -178,7 +178,7 @@ export class UserService {
 				{ sender: { id: friendId }, receiver: { id: userId } },
 			],
 			relations: ['sender', 'receiver'],
-			order: { sentAt: 'DESC' },
+			order: { sentAt: 'ASC' },
 		});
 	}
 

@@ -6,17 +6,24 @@ import {
 	Patch,
 	Param,
 	Delete,
+	UseGuards,
 } from '@nestjs/common';
 import { TournamentService } from './tournament.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { ResponseUtil } from '../common/utils/response.util';
 import { BadRequestException } from '../common/exceptions/application.exceptions';
+import { JWTAuthGuard } from '../auth/guards/auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../user/entities/user.entity';
 
+@UseGuards(JWTAuthGuard)
 @Controller('tournament')
 export class TournamentController {
 	constructor(private readonly tournamentService: TournamentService) {}
 
+	@UseGuards(AdminGuard)
 	@Post()
 	async create(@Body() createTournamentDto: CreateTournamentDto) {
 		try {
@@ -32,9 +39,9 @@ export class TournamentController {
 	}
 
 	@Post(':id/join')
-	async join(@Param('id') id: number, @Body('userId') userId: number) {
+	async join(@Param('id') id: number, @CurrentUser() user: User) {
 		try {
-			const tournament = await this.tournamentService.join(id, userId);
+			const tournament = await this.tournamentService.join(id, user.id);
 			return ResponseUtil.success(
 				tournament,
 				'User joined tournament successfully',
@@ -71,6 +78,7 @@ export class TournamentController {
 	}
 
 	@Patch(':id')
+	@UseGuards(AdminGuard)
 	async update(
 		@Param('id') id: number,
 		@Body() updateTournamentDto: UpdateTournamentDto,
@@ -90,6 +98,7 @@ export class TournamentController {
 	}
 
 	@Delete(':id')
+	@UseGuards(AdminGuard)
 	async remove(@Param('id') id: number) {
 		try {
 			const result = await this.tournamentService.remove(id);

@@ -19,8 +19,7 @@ export class ScoreController {
     @Query('gameName') gameName: string,
   ) {
     try {
-      createScoreDto.user = user;
-      const score = await this.scoreService.submitScore(createScoreDto, gameName);
+      const score = await this.scoreService.submitScore(createScoreDto, gameName, user);
       return ResponseUtil.success(score, 'Score submitted successfully');
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -47,8 +46,8 @@ export class ScoreController {
     try {
       const report = await this.scoreService.getTopPlayersReport(
         gameId,
-        new Date(startDate),
-        new Date(endDate),
+        startDate ? new Date(startDate) : undefined,
+        endDate ? new Date(endDate) : undefined,
         limit,
       );
       return ResponseUtil.success(report, 'Top players report generated successfully');

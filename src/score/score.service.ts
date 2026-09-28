@@ -6,6 +6,7 @@ import { RedisService } from '../redis/redis.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GameService } from '../game/game.service';
 import { LeaderboardGateway } from '../websocket/leaderboard.gateway';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class ScoreService {
@@ -17,18 +18,22 @@ export class ScoreService {
 		private readonly leaderboardGateway: LeaderboardGateway
 	) {}
 
-	async submitScore(createScoreDto: CreateScoreDto, gameName: string) {
+	async submitScore(
+		createScoreDto: CreateScoreDto,
+		gameName: string,
+		user: User,
+	) {
 		const queryRunner = this.dataSource.createQueryRunner();
 		await queryRunner.connect();
 		await queryRunner.startTransaction();
 
 		try {
 			// Normal postgres
-			createScoreDto.game = await this.gameService.findOneByName(gameName);
+			const game = await this.gameService.findOneByName(gameName);
 			const score = this.scoreRepo.create({
 				score: createScoreDto.score,
-				user: createScoreDto.user,
-				game: createScoreDto.game,
+				user,
+				game,
 			});
 
 			await queryRunner.manager.save(score);
@@ -39,7 +44,7 @@ export class ScoreService {
 			await this.redisService.addScore(
 				leaderboard,
 				createScoreDto.score,
-				`user:${createScoreDto.user.username}`,
+				`user:${user.username}`,
 			);
 
 			await queryRunner.commitTransaction();
@@ -66,11 +71,11 @@ export class ScoreService {
 
 	async getTopPlayersReport(
 		gameId: string,
-		startDate: Date,
-		endDate: Date,
-		limit: number,
+		startDate?: Date,
+		endDate?: Date,
+		limit?: number,
 	) {
-		return await this.scoreRepo
+		const query = this.scoreRepo
 			.createQueryBuilder('score')
 			.select(
 				'score.userId,' +
@@ -81,13 +86,18 @@ export class ScoreService {
 			)
 			.innerJoin('score.game', 'game')
 			.where('score.gameId = :gameId', { gameId })
-			.andWhere('score.createdAt BETWEEN :startDate AND :endDate', {
-				startDate,
-				endDate,
-			})
 			.groupBy('score.userId, game.name')
 			.orderBy('totalScore', 'DESC')
-			.limit(limit)
-			.getRawMany();
+			.limit(limit);
+
+		if (startDate) {
+			query.andWhere('score.createdAt >= :startDate', { startDate });
+		}
+
+		if (endDate) {
+			query.andWhere('score.createdAt <= :endDate', { endDate });
+		}
+
+		return await query.getRawMany();
 	}
 }
