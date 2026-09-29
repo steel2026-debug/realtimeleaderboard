@@ -7,13 +7,16 @@ import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
 	app.enableCors({
-		origin: /^http:\/\/(localhost|127\.0\.0\.1):\d+$/,
+		origin: true,
+		credentials: true,
 	});
 	app.useGlobalFilters(new GlobalExceptionFilter());
 	app.useGlobalPipes(new ValidationPipe());
 	app.useGlobalInterceptors(new TimeoutInterceptor());
 
-	await app.listen(3000);
+	const port = process.env.PORT || 3000;
+	await app.listen(port);
+	console.log(`Server running on port ${port}`);
 }
 
 bootstrap();
